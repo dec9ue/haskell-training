@@ -9,7 +9,7 @@ import Control.Monad
 -- generates points with the judgement 
 calcOneDot :: IO (Bool,(Int,Int,Int))
 calcOneDot  =  do
-    (res,p) <- calcOneDotWith getRandomByte 8 (0,0,8)
+    (res,p) <- calcOneDotWith getRandomByte 256 (0,0,256)
     case res of
         GT -> return (False,p)
         _  -> return (True ,p)
@@ -47,10 +47,10 @@ calcOneDotWith :: (Int -> IO Int)->Int->(Int,Int,Int)->IO (Ordering,(Int,Int,Int
 calcOneDotWith getRandomByte unit (lastx,lasty,max) = do
     x <- (getRandomByte unit)
     y <- (getRandomByte unit)
-    let (newx,newy) = (8*lastx+x,8*lasty+y)
+    let (newx,newy) = (unit*lastx+x,unit*lasty+y)
         res         = evalDot (newx,newy,max)
         in case res of
-          EQ -> calcOneDotWith getRandomByte unit (newx,newy,8*max)
+          EQ -> calcOneDotWith getRandomByte unit (newx,newy,unit*max)
           _  -> return (res,(newx,newy,max))
 
 -- similar to foldr, but with a limited length
