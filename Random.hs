@@ -50,14 +50,12 @@ calcOneDotWith getRandomByte unit (lastx,lasty,max) = do
     let (newx,newy) = (unit*lastx+x,unit*lasty+y)
         res         = evalDot (newx,newy,max)
         in case res of
-          EQ -> calcOneDotWith getRandomByte unit (newx,newy,unit*max)
-          _  -> return (res,(newx,newy,max))
+            EQ -> calcOneDotWith getRandomByte unit (newx,newy,unit*max)
+            _  -> return (res,(newx,newy,max))
 
 -- similar to foldr, but with a limited length
 foldMN :: (Monad m)=>(a -> b -> b) -> m a -> Int -> b -> m b
 foldMN folder func times init
-  | times <= 0 = return init
-  | otherwise  = do
-     res <- func
-     tail <-  foldMN folder func (times - 1) init
-     return $ folder res tail
+     | times <= 0 = return init
+     | otherwise  = liftM2 folder func $ foldMN folder func (times - 1) init
+
