@@ -80,7 +80,13 @@ foldBN' :: (Monad m)=>(a->a->a) -> m a -> Int -> m a
 foldBN' folder m count
     | count == 1 = m
     | otherwise  = let c1 = count `div` 2 in do
-          v1 <- foldBN' folder m c1
-          v2 <- foldBN' folder m (count - c1)
-          let! (v1',v2') = (v1,v2) in return $ folder v1' v2'
+        v1 <- foldBN' folder m c1
+        v2 <- foldBN' folder m (count - c1)
+        return $! folder v1 v2
+
+main :: IO ()
+main = do
+    (count,total) <- takeStat calcOneDot 100000
+    print (count * 4,total)
+
 
