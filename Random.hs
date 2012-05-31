@@ -21,7 +21,7 @@ takeStat :: IO (Bool,(Int,Int,Int)) -> Int -> IO (Int,Int)
 takeStat func count = 
     let c = \(v,_) (a,b)->if v then (a+1,b+1) else (a,b+1)
     in
-    foldMN c func count (0,0)
+    foldMN' c func count (0,0)
 
 -- PUBLIC:
 -- lists all the result
@@ -54,13 +54,13 @@ calcOneDotWith getRandomPair unit (lastx,lasty,max) = do
             EQ -> calcOneDotWith getRandomPair unit (newx,newy,unit*max)
             _  -> return (res,(newx,newy,max))
 
--- similar to foldr, but with a limited length
-foldMN :: (Monad m)=>(a -> b -> b) -> m a -> Int -> b -> m b
-foldMN folder func times init =
+-- similar to foldr', but with a limited length
+foldMN' :: (Monad m)=>(a -> b -> b) -> m a -> Int -> b -> m b
+foldMN' folder func times init =
     let foldsub folder func times v = if times <= 0
           then return v
           else do w <- func
-                  foldsub folder func (times -1) $ folder w v
+                  foldsub folder func (times -1) $! folder w v
     in foldsub folder func times init
 
 -- foldMN folder func times init
