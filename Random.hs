@@ -18,10 +18,17 @@ calcOneDot  =  do
 -- take statistics of the count number of results.
 -- statistics is formatted as (cout_of_true,total)
 takeStat :: IO (Bool,(Int,Int,Int)) -> Int -> IO (Int,Int)
-takeStat func count = 
-    let c = \(v,_) (a,b)->if v then (a+1,b+1) else (a,b+1)
+takeStat = takeStat1
+takeStat1 func count =
+    let c   = \(x1,y1)(x2,y2) -> (x1+x2,y1+y2)
+        f   = \ (x,_) -> if x then (1,1) else (0,1)
     in
-    foldMN' c func count (0,0)
+    foldBN' c (liftM f func) count
+
+takeStat2 func count =
+   let c = \(v,_) (a,b)->if v then (a+1,b+1) else (a,b+1)
+   in
+   foldMN' c func count (0,0)
 
 -- PUBLIC:
 -- lists all the result
@@ -67,3 +74,13 @@ foldMN' folder func times init =
 --      | times <= 0 = return init
 --      | otherwise  = liftM2 folder func $ foldMN folder func (times - 1) init
 -- 
+
+-- similar to foldr1', but with a limited length and for monoid operation
+foldBN' :: (Monad m)=>(a->a->a) -> m a -> Int -> m a
+foldBN' folder m count
+    | count == 1 = m
+    | otherwise  = let c1 = count `div` 2 in do
+          v1 <- foldBN' folder m c1
+          v2 <- foldBN' folder m (count - c1)
+          let! (v1',v2') = (v1,v2) in return $ folder v1' v2'
+
