@@ -5,9 +5,12 @@
 import System.Random
 import Control.Monad
 
+type Point = (Int,Int,Int)
+type Stat  = (Int,Int)
+
 -- PUBLIC:
 -- generates points with the judgement 
-calcOneDot :: IO (Bool,(Int,Int,Int))
+calcOneDot :: IO (Bool,Point)
 calcOneDot  =  do
     (res,p) <- calcOneDotWith getRandomPair 256 (0,0,256)
     case res of
@@ -17,7 +20,7 @@ calcOneDot  =  do
 -- PUBLIC:
 -- take statistics of the count number of results.
 -- statistics is formatted as (cout_of_true,total)
-takeStat :: IO (Bool,(Int,Int,Int)) -> Int -> IO (Int,Int)
+takeStat :: IO (Bool,Point) -> Int -> IO Stat
 takeStat = takeStat2
 takeStat1 func count =
     let c   = \(x1,y1)(x2,y2) -> (x1+x2,y1+y2)
@@ -39,20 +42,20 @@ makeList func times = replicateM times func
 --  GT means outside (or on-the-boundary) of the circle
 --  EQ means lacking accuracy and gaining accuracy is needed.
 --  LT means inside of the circle
-evalDot :: (Int,Int,Int) -> Ordering
+evalDot :: Point -> Ordering
 evalDot (x,y,max)
     | (x * x + y * y ) >= (max*max) = GT
     | (x+1)*(x+1) + (y+1)*(y+1) > max * max = EQ 
     | otherwise = LT
 
 -- random function
-getRandomPair :: Int -> IO (Int,Int)
+getRandomPair :: Int -> IO Stat
 getRandomPair max = do
    v <- randomRIO (0,max*max-1)
    return (v `mod` max,v `div` max)
 
 -- generates points with the judgement (subroutine)
-calcOneDotWith :: (Int -> IO (Int,Int))->Int->(Int,Int,Int)->IO (Ordering,(Int,Int,Int))
+calcOneDotWith :: (Int -> IO Stat)->Int->Point->IO (Ordering,Point)
 calcOneDotWith getRandomPair unit (lastx,lasty,max) = do
     (x,y) <- (getRandomPair unit)
     let (newx,newy) = (unit*lastx+x,unit*lasty+y)
