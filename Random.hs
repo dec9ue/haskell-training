@@ -18,7 +18,7 @@ calcOneDot  =  do
 -- take statistics of the count number of results.
 -- statistics is formatted as (cout_of_true,total)
 takeStat :: IO (Bool,(Int,Int,Int)) -> Int -> IO (Int,Int)
-takeStat = takeStat1
+takeStat = takeStat2
 takeStat1 func count =
     let c   = \(x1,y1)(x2,y2) -> (x1+x2,y1+y2)
         f   = \ (x,_) -> if x then (1,1) else (0,1)
