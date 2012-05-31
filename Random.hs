@@ -29,9 +29,9 @@ takeStat1 func count =
     foldBN' c (liftM f func) count
 
 takeStat2 func count =
-   let c = \(v,_) (a,b)->if v then (a+1,b+1) else (a,b+1)
-   in
-   foldMN' c func count (0,0)
+    let c = \(v,_) (a,b)->if v then (a+1,b+1) else (a,b+1)
+    in
+    foldMN' c func count (0,0)
 
 -- PUBLIC:
 -- lists all the result
@@ -51,8 +51,8 @@ evalDot (x,y,max)
 -- random function
 getRandomPair :: Int -> IO Stat
 getRandomPair max = do
-   v <- randomRIO (0,max*max-1)
-   return (v `mod` max,v `div` max)
+    v <- randomRIO (0,max*max-1)
+    return (v `mod` max,v `div` max)
 
 -- generates points with the judgement (subroutine)
 calcOneDotWith :: (Int -> IO Stat)->Int->Point->IO (Ordering,Point)
