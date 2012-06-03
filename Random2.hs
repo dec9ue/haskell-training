@@ -105,6 +105,12 @@ foldBN' folder m count
         v2 <- foldBN' folder m (count - c1)
         return $! folder v1 v2
 
+--
+--foldMN :: (Monad m) => (a->a->a) -> m a -> Int -> m a
+--foldMN folder m count init =
+--    let f (x,c) y = if c > 0 then return $! folder x y else y
+--    in foldM f init $ [return (count -i , v)|  
+
 main :: IO ()
 main = do
     (count,total) <- takeStat calcOneDot 10000000
