@@ -4,6 +4,9 @@
 -- as the samples increases, (matched / samples) approaches to pi/4 slowly. 
 import System.Random
 import Control.Monad
+import Data.IORef
+import System.IO.Unsafe ( unsafePerformIO )
+
 
 type Point = (Int,Int,Int)
 type Stat  = (Int,Int)
@@ -21,7 +24,7 @@ calcOneDot  =  do
 -- take statistics of the count number of results.
 -- statistics is formatted as (cout_of_true,total)
 takeStat :: IO (Bool,Point) -> Int -> IO Stat
-takeStat = takeStat2
+takeStat = takeStat1
 takeStat1 func count =
     let c   = \(x1,y1)(x2,y2) -> (x1+x2,y1+y2)
         f   = \ (x,_) -> if x then (1,1) else (0,1)
@@ -48,10 +51,25 @@ evalDot (x,y,max)
     | (x+1)*(x+1) + (y+1)*(y+1) > max * max = EQ 
     | otherwise = LT
 
+-- IORef for custom random
+tempIORef :: IORef ([Int])
+tempIORef = unsafePerformIO $ newIORef $ randomRs (0,255) $ mkStdGen 100
+
+getRandomIO :: IO Int
+getRandomIO = return 255
+-- getRandomIO = do
+--     list <- readIORef tempIORef
+--     writeIORef tempIORef $ tail list
+--     return $ head list
+
+-- custom randomRIO
+randomRIO_c :: (Int,Int) -> IO Int
+randomRIO_c _ = getRandomIO
+
 -- random function
 getRandomPair :: Int -> IO Stat
 getRandomPair max = do
-    v <- randomRIO (0,max*max-1)
+    v <- randomRIO_c (0,max*max-1)
     return (v `mod` max,v `div` max)
 
 -- generates points with the judgement (subroutine)
@@ -89,7 +107,10 @@ foldBN' folder m count
 
 main :: IO ()
 main = do
-    (count,total) <- takeStat calcOneDot 100000
+    (count,total) <- takeStat calcOneDot 10000000
     print (count * 4,total)
 
+-- main = do
+--     res <- replicateM 10 getRandomIO
+--     print res
 
