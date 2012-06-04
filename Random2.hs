@@ -4,6 +4,7 @@
 -- as the samples increases, (matched / samples) approaches to pi/4 slowly. 
 import System.Random
 import Control.Monad
+import Data.Foldable ( foldr' )
 import Data.IORef
 import System.IO.Unsafe ( unsafePerformIO )
 
@@ -24,7 +25,7 @@ calcOneDot  =  do
 -- take statistics of the count number of results.
 -- statistics is formatted as (cout_of_true,total)
 takeStat :: IO (Bool,Point) -> Int -> IO Stat
-takeStat = takeStat1
+takeStat = takeStat5
 takeStat1 func count =
     let c   = \(x1,y1)(x2,y2) -> (x1+x2,y1+y2)
         f   = \ (x,_) -> if x then (1,1) else (0,1)
@@ -35,6 +36,24 @@ takeStat2 func count =
     let c = \(v,_) (a,b)->if v then (a+1,b+1) else (a,b+1)
     in
     foldMN' c func count (0,0)
+
+takeStat3 func count =
+    let c   = \(x1,y1)(x2,y2) -> (x1+x2,y1+y2)
+        f   = \ (x,_) -> if x then (1,1) else (0,1)
+    in
+    foldRN' c (liftM f func) count (0,0)
+
+takeStat4 func count =
+    let c   = \(x1,y1)(x2,y2) -> (x1+x2,y1+y2)
+        f   = \ (x,_) -> if x then (1,1) else (0,1)
+    in
+    foldMRN' c (liftM f func) count (0,0)
+
+takeStat5 func count =
+    let c   = \(x1,y1)(x2,y2) -> (x1+x2,y1+y2)
+        f   = \ (x,_) -> if x then (1,1) else (0,1)
+    in
+    foldRN''' c (liftM f func) count (0,0)
 
 -- PUBLIC:
 -- lists all the result
@@ -106,14 +125,32 @@ foldBN' folder m count
         return $! folder v1 v2
 
 --
---foldMN :: (Monad m) => (a->a->a) -> m a -> Int -> m a
---foldMN folder m count init =
---    let f (x,c) y = if c > 0 then return $! folder x y else y
---    in foldM f init $ [return (count -i , v)|  
+foldRN' :: (a->a->a) -> IO a -> Int -> a -> IO a
+foldRN' folder m count init =
+    let f (c,x) y = if c > 0 then folder x y else  y
+    in return $ foldr' f init [(count -i , unsafePerformIO m)| i <- [1..]]
+
+foldRN'' :: (a->a->a) -> IO a -> Int -> a -> IO a
+foldRN'' folder m count init =
+    return $ foldr' folder init $ replicate count $ unsafePerformIO m
+
+{-# INLINE foldRN''' #-}
+foldRN''' :: (a->a->a) -> IO a -> Int -> a -> IO a
+foldRN''' folder m count init =
+    let foldRN_sub''' folder m count v = if count == 0
+            then v
+            else let! r = folder v $ unsafePerformIO m
+                 in foldRN_sub''' folder m (count -1) r 
+    in return $ foldRN_sub''' folder m count init 
+
+foldMRN' :: (a->a->a) -> IO a -> Int -> a -> IO a
+foldMRN' folder m count init =
+    let f = liftM2 folder
+    in foldr' f (return init) $ replicate count m
 
 main :: IO ()
 main = do
-    (count,total) <- takeStat calcOneDot 10000000
+    (count,total) <- takeStat calcOneDot 1000000
     print (count * 4,total)
 
 -- main = do
