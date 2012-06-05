@@ -12,6 +12,16 @@ import System.IO.Unsafe ( unsafePerformIO )
 type Point = (Int,Int,Int)
 type Stat  = (Int,Int)
 
+main :: IO ()
+main = do
+    (count,total) <- takeStat calcOneDot 1000000
+    print (count * 4,total)
+
+-- main = do
+--     res <- replicateM 10 getRandomIO
+--     print res
+
+
 -- PUBLIC:
 -- generates points with the judgement 
 calcOneDot :: IO (Bool,Point)
@@ -146,13 +156,3 @@ foldMRN' :: (a->a->a) -> IO a -> Int -> a -> IO a
 foldMRN' folder m count init =
     let f = liftM2 folder
     in foldr' f (return init) $ replicate count m
-
-main :: IO ()
-main = do
-    (count,total) <- takeStat calcOneDot 1000000
-    print (count * 4,total)
-
--- main = do
---     res <- replicateM 10 getRandomIO
---     print res
-
