@@ -7,19 +7,32 @@ import Control.Monad
 import Data.Foldable ( foldr' )
 import Data.IORef
 import System.IO.Unsafe ( unsafePerformIO )
+import System.IO( hFlush , stdout)
 
 
 type Point = (Int,Int,Int)
 type Stat  = (Int,Int)
 
+main :: IO ()
+main = do
+    (count,total) <- takeStat calcOneDot 10000000
+    print (count * 4,total)
+
 -- PUBLIC:
 -- generates points with the judgement 
 calcOneDot :: IO (Bool,Point)
 calcOneDot  =  do
-    (res,p) <- calcOneDotWith getRandomPair 256 (0,0,256)
+    (res,p) <- calcOneDotWith 256 (0,0,256)
     case res of
         GT -> return (False,p)
         _  -> return (True ,p)
+
+
+showSanity (r,(x,y,max))
+    | r == res  = "sane"
+    | r == GT && res == EQ = "sane"
+    | otherwise = "INSANE" ++ show (r,(x,y,max))
+    where res = (x*x + y*y) `compare` (max * max)
 
 -- PUBLIC:
 -- take statistics of the count number of results.
@@ -39,28 +52,28 @@ takeStat5 func count =
 --  LT means inside of the circle
 {-# INLINE evalDot #-}
 evalDot :: Point -> Ordering
-evalDot (x,y,max) =
-    let xy = x * x
-        mm = max * max
-    in
-    if xy >= mm
-        then GT
-        else if xy + 2*(x+y+1) > mm then EQ else LT
+evalDot (x,y,max) 
+    | xx + yy >= mm            = GT
+    | xx + yy + 2*(x+y+1) > mm = EQ
+    | otherwise                = LT
+    where xx = x * x
+          yy = y * y
+          mm = max * max
 
 -- IORef for custom random
 tempIORef :: IORef ([Int])
 tempIORef = unsafePerformIO $ newIORef $ randomRs (0,255) $ mkStdGen 100
 
 getRandomIO :: IO Int
-getRandomIO = return 255
--- getRandomIO = do
---     list <- readIORef tempIORef
---     writeIORef tempIORef $ tail list
---     return $ head list
+-- getRandomIO = return 255
+getRandomIO = do
+    list <- readIORef tempIORef
+    writeIORef tempIORef $ tail list
+    return $ head list
 
 -- custom randomRIO
 randomRIO_c :: (Int,Int) -> IO Int
-randomRIO_c _ = getRandomIO
+randomRIO_c = randomRIO
 
 -- random function
 getRandomPair :: Int -> IO Stat
@@ -69,27 +82,31 @@ getRandomPair max = do
     return (v `mod` max,v `div` max)
 
 -- generates points with the judgement (subroutine)
-calcOneDotWith :: (Int -> IO Stat)->Int->Point->IO (Ordering,Point)
-calcOneDotWith getRandomPair unit (lastx,lasty,max) = do
-    (x,y) <- (getRandomPair unit)
+calcOneDotWith :: Int->Point->IO (Ordering,Point)
+calcOneDotWith unit (lastx,lasty,max) = do
+    x <- randomRIO (0,unit-1)
+    y <- randomRIO (0,unit-1)
     let newx        = unit*lastx+x
         newy        = unit*lasty+y
         res         = evalDot (newx,newy,max)
         in case res of
-            EQ -> calcOneDotWith getRandomPair unit (newx,newy,unit*max)
+            EQ -> calcOneDotWith unit (newx,newy,unit*max)
             _  -> return (res,(newx,newy,max))
 
 {-# INLINE foldRN''' #-}
-foldRN''' :: (a->a->a) -> IO a -> Int -> a -> IO a
+foldRN''' :: (Show a)=> (a->a->a) -> IO a -> Int -> a -> IO a
 foldRN''' folder m count init =
     let foldRN_sub''' folder m count v = if count == 0
             then v
-            else foldRN_sub''' folder m (count -1) $! folder v $ unsafePerformIO m 
+            else
+               let r = unsafePerformIO $ do
+                   when ((count `mod` 100000) == 0) $ do
+                      putStrLn $ "v : " ++  show v ++ " count :" ++ show count
+                      hFlush stdout
+                   m
+               in
+            foldRN_sub''' folder m (count -1) $! folder v r
     in return $ foldRN_sub''' folder m count init 
 
-main :: IO ()
-main = do
-    (count,total) <- takeStat calcOneDot 1000000
-    print (count * 4,total)
 
 
