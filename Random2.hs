@@ -139,8 +139,7 @@ foldRN''' :: (a->a->a) -> IO a -> Int -> a -> IO a
 foldRN''' folder m count init =
     let foldRN_sub''' folder m count v = if count == 0
             then v
-            else let! r = folder v $ unsafePerformIO m
-                 in foldRN_sub''' folder m (count -1) r 
+            else foldRN_sub''' folder m (count -1) $! folder v $ unsafePerformIO m 
     in return $ foldRN_sub''' folder m count init 
 
 foldMRN' :: (a->a->a) -> IO a -> Int -> a -> IO a
