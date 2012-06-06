@@ -7,7 +7,6 @@ import Control.Monad
 import Data.Foldable ( foldr' )
 import Data.IORef
 import System.IO.Unsafe ( unsafePerformIO )
-import System.IO
 
 
 type Point = (Int,Int,Int)
@@ -147,16 +146,12 @@ foldRN'' folder m count init =
     return $ foldr' folder init $ replicate count $ unsafePerformIO m
 
 {-# INLINE foldRN''' #-}
-foldRN''' :: (Show a) =>(a->a->a) -> IO a -> Int -> a -> IO a
+foldRN''' :: (a->a->a) -> IO a -> Int -> a -> IO a
 foldRN''' folder m count init =
     let foldRN_sub''' folder m count v = if count == 0
             then v
             else 
-                let r = folder v $ unsafePerformIO $ do
-                     when (count `mod` 10000 == 0) $ do
-                         putStrLn $ "value : " ++ show r ++ " count : " ++ show count
-                         hFlush stdout
-                     m 
+                let ! r = folder v $ unsafePerformIO m 
                 in foldRN_sub''' folder m (count -1) r
     in return $ foldRN_sub''' folder m count init 
 
