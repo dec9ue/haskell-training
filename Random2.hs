@@ -152,12 +152,12 @@ foldRN''' folder m count init =
     let foldRN_sub''' folder m count v = if count == 0
             then v
             else 
-                let r = folder v $ unsafePerformIO $ do
-                     when (count `mod` 10000 == 0) $ do
-                         putStrLn $ "value : " ++ show r ++ " count : " ++ show count
+                let v' = unsafePerformIO $ do
+                     when (count `mod` 50000 == 0) $ do
+                         putStrLn $ "value : " ++ show v ++ " count : " ++ show count
                          hFlush stdout
                      m 
-                in foldRN_sub''' folder m (count -1) r
+                in foldRN_sub''' folder m (count -1) $! folder v v'
     in return $ foldRN_sub''' folder m count init 
 
 foldMRN' :: (a->a->a) -> IO a -> Int -> a -> IO a
