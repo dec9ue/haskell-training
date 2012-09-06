@@ -7,16 +7,16 @@ merge list1@(head1:tail1) list2@(head2:tail2)
     | head1 > head2 = head2:(merge list1 tail2)
     | otherwise     = head1:(merge tail1 list2)
 
-sort_and_tail list n
+mergesort_and_tail list n
     | n == 0 = ([],list)
     | n == 1 = ([head list],tail list)
     | otherwise =
         let half = n `div` 2 in
-        let (sorted1,tail1) = sort_and_tail list half in
-        let (sorted2,tail2) = sort_and_tail tail1 (n - half) in
+        let (sorted1,tail1) = mergesort_and_tail list half in
+        let (sorted2,tail2) = mergesort_and_tail tail1 (n - half) in
               (merge sorted1 sorted2,tail2)
 
-merge_sort l = fst $ sort_and_tail l $ length l
+merge_sort l = fst $ mergesort_and_tail l $ length l
 
 quick_sort_sub list pivot first_half second_half trailer =
     case list of
