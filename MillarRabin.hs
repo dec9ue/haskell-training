@@ -16,15 +16,16 @@ random min max = randomRIO (min,max)
 
 millerrabbintest r t =
   let (s,k) = find_s_k r in
-  let test_sub2 j b' =
+  let rabbintest_sub j b' =
         if (b' == r-1)||(b' == 1)
         then True
         else
             if j < s
-            then test_sub2 (j+1)((b'*b')`mod` r) 
+            then rabbintest_sub (j+1)((b'*b')`mod` r) 
             else False
   in
-  let test_sub1 r t i =
+  let rabbintest a k r = rabbintest_sub 0 $ modexp a k r in
+  let millerrabbin_sub r t i =
         if (i > t )
         then
           do
@@ -32,13 +33,14 @@ millerrabbintest r t =
             return True
         else
           do
-            a <- randomRIO ( 1, r) 
-            b <- return $ modexp a k r
-            ires <- return $ test_sub2 0 b
+            a <- randomRIO ( 1, r-1) 
+            ires <- return $ rabbintest a k r
             putChar '+'
-            if(ires == False) then return False else test_sub1 r t (i+1)
+            case ires of
+              False -> return False
+              True  -> millerrabbin_sub r t (i+1)
   in
-  test_sub1 r t 1
+  millerrabbin_sub r t 1
 
 find_next_prime n = 
         do
