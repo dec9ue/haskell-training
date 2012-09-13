@@ -1,18 +1,18 @@
 import System.Random
 
 modexp m p n = modexp_sub m p n m 1
-  where modexp_sub m p n c r
-          | p == 0         = r
-          | otherwise      =
-               let res = if ( p `mod` 2 == 1 ) then (c * r) `mod` n else r in
-               modexp_sub m (p `div`2) n ((c * c)`mod` n) res
+  where
+    modexp_sub m p n c r
+      | p == 0         = r
+      | otherwise      =
+         let res = if ( p `mod` 2 == 1 ) then (c * r) `mod` n else r in
+         modexp_sub m (p `div`2) n ((c * c)`mod` n) res
 
 find_s_k r = find_s_k_sub (r-1) 1 1
-  where find_s_k_sub r ss s
-          | (r`div` ss) `mod` 2 == 1  = (s,r `div` ss)
-          | otherwise                 = find_s_k_sub r (2*ss) (1+ s)
-
-random min max = randomRIO (min,max)
+  where
+    find_s_k_sub r ss s
+      | (r`div` ss) `mod` 2 == 1  = (s,r `div` ss)
+      | otherwise                 = find_s_k_sub r (2*ss) (1+ s)
 
 millerrabbintest r t =
   let (s,k) = find_s_k r in
@@ -43,11 +43,11 @@ millerrabbintest r t =
   millerrabbin_sub r t 1
 
 find_next_prime n = 
-        do
-          res <- millerrabbintest n 10
-          case res of
-            True  -> return n
-            False -> find_next_prime (n + 1)
+  do
+    res <- millerrabbintest n 10
+      case res of
+      True  -> return n
+      False -> find_next_prime (n + 1)
 
 relative_prime p q
   | p == 0 || q == 0 = False
