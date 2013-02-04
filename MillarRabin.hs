@@ -1,6 +1,9 @@
 import System.Random
 import System.IO.Unsafe
 
+-- debug = id
+debug = \x -> return ()
+
 modexp m p n = modexp_sub m p n m 1
   where
     modexp_sub m p n c r
@@ -37,14 +40,14 @@ millerrabbintest r t =
   let millerrabbin_sub r t i =
         if (i > t )
         then do
-            putChar '\n'
+            debug $ putChar '\n'
             return True
         else do
             a <- randomRIO ( 1, r-1) 
             ires <- return $ rabbintest a k r
-            putChar '+'
+            debug $ putChar '+'
             case ires of
-                False -> print "*\n" >> return False
+                False -> (debug $ print "*\n") >> return False
                 True  -> millerrabbin_sub r t (i+1)
   in
   millerrabbin_sub r t 1
@@ -55,6 +58,9 @@ find_next_prime n =
     case res of
       True  -> return n
       False -> find_next_prime (n + 1)
+
+prime_seq :: [Integer]
+prime_seq = filter (\n -> unsafePerformIO $ millerrabbintest n 10) [2..]
 
 relative_prime p q
   | p == 0 || q == 0 = False

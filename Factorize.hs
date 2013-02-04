@@ -1,10 +1,38 @@
 import Data.Maybe
+import System.Random
+import System.IO.Unsafe
+import Control.Monad
+
 
 main =
   do
-    print $ factorize 1024
-    putStrLn ""
-    print $ factorize 280671392065546467397265294532969672241810318954163887187279320454220348884327
+    putStrLn $ "preparing primes..."
+    putStrLn $ "last element is : " ++ (show $ last $ take 100000 $ prime_seq)
+    putStrLn $ "preparing primes...done."
+    forM_ (take 10 $ sieve_seq 888888888888888888884327) (\x -> putStrLn $ show x)
+    putStrLn "now start"
+    forM_ (sieve_seq  280671392065546467397265294532969672241810318954163887187279320454220348884327) (\x -> putStrLn $ show x)
+
+sieve_seq n = do
+    x <- [(1 + intsqrt n)..]
+    r <- return $ x * x - n
+    if limited_factorizable r 100000
+    then [(x,r)]
+    else []
+
+limited_factorizable n limit =  limited_factorizable_with_list n $ take limit prime_seq
+
+limited_factorizable_with_list n prime_list = all (<= (last prime_list)) $ limited_factorize_with_list n prime_list
+
+limited_factorize n limit = limited_factorize_with_list n $ take limit prime_seq
+
+limited_factorize_with_list n prime_list =
+   let fact_list  = fact n prime_list in
+   let rest_val   = n `div` product fact_list in
+   if rest_val == n
+   then fact_list ++ [n]
+   else fact_list ++ (limited_factorize_with_list rest_val fact_list)
+
 
 factorize n =
     case p of
@@ -28,6 +56,7 @@ ordintsqrt n r =
     (_    ,    _) -> undefined
   
 
+-- ismatch must be a monotonic function over the domain
 binsearch ismatch high low =
     case (ismatch high, ismatch low) of
     (EQ, _)  -> high
@@ -39,14 +68,77 @@ binsearch ismatch high low =
         GT -> binsearch ismatch mid low 
         LT -> binsearch ismatch high mid
 
-binsearchIO ismatch high low = do
-    print $ "binsearch io : " ++ show high ++ "," ++ show low
-    case (ismatch high, ismatch low) of
-      (EQ, _)  -> return high
-      ( _,EQ)  -> return low
-      _        -> let mid = low+((high-low) `div` 2)  in
-        case ismatch mid of
-        EQ -> return mid
-        GT -> binsearchIO ismatch mid low
-        LT -> binsearchIO ismatch high mid
+-- debug = id
+debug = \x -> return ()
+
+modexp m p n = modexp_sub m p n m 1
+  where
+    modexp_sub m p n c r
+      | p == 0         = r
+      | otherwise      =
+         let res = if ( p `mod` 2 == 1 ) then (c * r) `mod` n else r in
+         modexp_sub m (p `div`2) n ((c * c)`mod` n) res
+
+find_s_k r = find_s_k_sub (r-1) 1 1
+  where
+    find_s_k_sub r ss s
+      | (r`div` ss) `mod` 2 == 1  = (s,r `div` ss)
+      | otherwise                 = find_s_k_sub r (2*ss) (1+ s)
+
+prime_prod limit = prime_prod_sub limit 2 1
+  where
+    prime_prod_sub limit cur res
+      | res*cur > limit = res
+      | unsafePerformIO $ millerrabbintest cur 10
+                        = prime_prod_sub limit (cur + 1) (res*cur)
+      | otherwise       = prime_prod_sub limit (cur + 1) res
+
+millerrabbintest r t =
+  let (s,k) = find_s_k r in
+  let rabbintest_sub j b' =
+        if (b' == r-1)||(b' == 1)
+        then True
+        else
+            if j < s
+            then rabbintest_sub (j+1)((b'*b')`mod` r) 
+            else False
+  in
+  let rabbintest a k r = rabbintest_sub 0 $ modexp a k r in
+  let millerrabbin_sub r t i =
+        if (i > t )
+        then do
+            debug $ putChar '\n'
+            return True
+        else do
+            a <- randomRIO ( 1, r-1) 
+            ires <- return $ rabbintest a k r
+            debug $ putChar '+'
+            case ires of
+                False -> (debug $ print "*\n") >> return False
+                True  -> millerrabbin_sub r t (i+1)
+  in
+  millerrabbin_sub r t 1
+
+find_next_prime n = 
+  do
+    res <- millerrabbintest n 10
+    case res of
+      True  -> return n
+      False -> find_next_prime (n + 1)
+
+prime_seq :: [Integer]
+prime_seq = filter (\n -> unsafePerformIO $ millerrabbintest n 10) [2..]
+
+relative_prime p q
+  | p == 0 || q == 0 = False
+  | p == 1 || q == 1 = True
+  | p > q            = relative_prime q (p `mod` q)
+  | otherwise        = relative_prime p (q `mod` p)
+
+find_prime keylen = 
+  let randomv = let min = 2 ^ (keylen - 1) in
+                randomRIO ( min,2*(min-1))
+  in do
+    v <- randomv
+    find_next_prime v
 
