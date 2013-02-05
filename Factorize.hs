@@ -5,6 +5,8 @@ import Control.Monad
 import Control.Parallel.Strategies
 import System.IO
 
+prime_limit = 100000
+
 display s = do
     putStrLn s
     hFlush stdout
@@ -12,7 +14,7 @@ display s = do
 main =
   do
     display $ "preparing primes..."
-    display $ "last element is : " ++ (show $ last $ take 100000 $ evaluate_parallel $ prime_seq)
+    display $ "last element is : " ++ (show $ last $ take prime_limit $ evaluate_parallel $ prime_seq)
     display $ "preparing primes...done."
     forM_ (take 10 $ sieve_seq 888888888888888888884327) (\x -> display $ show x)
     display "now start"
@@ -24,7 +26,7 @@ evaluate_parallel = withStrategy $ parListNth 5 rdeepseq
 sieve_seq n = do
     x <- [(1 + intsqrt n)..]
     r <- return $ x * x - n
-    prime_list <- return $ take 100000 prime_seq
+    prime_list <- return $ take prime_limit prime_seq
     res <- return $ evaluate_parallel $ limited_factorize_with_list r prime_list
     if all (<=(last prime_list)) res
     then [(x,r,res)]
@@ -37,12 +39,24 @@ limited_factorizable_with_list n prime_list = all (<= (last prime_list)) $ limit
 limited_factorize n limit = limited_factorize_with_list n $ take limit prime_seq
 
 limited_factorize_with_list 1 prime_list = []
+-- limited_factorize_with_list n prime_list =
+--    let fact_list  = fact n prime_list in
+--    let rest_val   = n `div` product fact_list in
+--    if rest_val == n
+--    then fact_list ++ [n]
+--    else fact_list ++ (limited_factorize_with_list rest_val fact_list)
 limited_factorize_with_list n prime_list =
-   let fact_list  = fact n prime_list in
-   let rest_val   = n `div` product fact_list in
-   if rest_val == n
-   then fact_list ++ [n]
-   else fact_list ++ (limited_factorize_with_list rest_val fact_list)
+   limited_factorize_with_list_internal n prime_list prime_list []
+
+limited_factorize_with_list_internal n prime_list [] [] = [n]
+
+limited_factorize_with_list_internal n prime_list [] res_list =
+   limited_factorize_with_list_internal n res_list res_list []
+
+limited_factorize_with_list_internal n prime_list (cur_head:cur_tail) res_list =
+   if n `mod` cur_head == 0
+   then cur_head:(limited_factorize_with_list_internal (n `div` cur_head) prime_list cur_tail (cur_head:res_list))
+   else limited_factorize_with_list_internal n prime_list cur_tail res_list
 
 factorize n =
     case p of
