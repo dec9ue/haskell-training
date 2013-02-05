@@ -2,22 +2,30 @@ import Data.Maybe
 import System.Random
 import System.IO.Unsafe
 import Control.Monad
+import Control.Parallel.Strategies
+import System.IO
 
+display s = do
+    putStrLn s
+    hFlush stdout
 
 main =
   do
-    putStrLn $ "preparing primes..."
-    putStrLn $ "last element is : " ++ (show $ last $ take 100000 $ prime_seq)
-    putStrLn $ "preparing primes...done."
-    forM_ (take 10 $ sieve_seq 888888888888888888884327) (\x -> putStrLn $ show x)
-    putStrLn "now start"
-    forM_ (sieve_seq  280671392065546467397265294532969672241810318954163887187279320454220348884327) (\x -> putStrLn $ show x)
+    display $ "preparing primes..."
+    display $ "last element is : " ++ (show $ last $ take 100000 $ evaluate_parallel $ prime_seq)
+    display $ "preparing primes...done."
+    forM_ (take 10 $ sieve_seq 888888888888888888884327) (\x -> display $ show x)
+    display "now start"
+    forM_ (sieve_seq  280671392065546467397265294532969672241810318954163887187279320454220348884327) (\x -> display $ show x)
+
+-- evaluate_parallel = parMap rseq id
+evaluate_parallel = withStrategy $ parListNth 5 rdeepseq
 
 sieve_seq n = do
     x <- [(1 + intsqrt n)..]
     r <- return $ x * x - n
     prime_list <- return $ take 100000 prime_seq
-    res <- return $ limited_factorize_with_list r prime_list
+    res <- return $ evaluate_parallel $ limited_factorize_with_list r prime_list
     if all (<=(last prime_list)) res
     then [(x,r,res)]
     else []
@@ -28,13 +36,13 @@ limited_factorizable_with_list n prime_list = all (<= (last prime_list)) $ limit
 
 limited_factorize n limit = limited_factorize_with_list n $ take limit prime_seq
 
+limited_factorize_with_list 1 prime_list = []
 limited_factorize_with_list n prime_list =
    let fact_list  = fact n prime_list in
    let rest_val   = n `div` product fact_list in
    if rest_val == n
    then fact_list ++ [n]
    else fact_list ++ (limited_factorize_with_list rest_val fact_list)
-
 
 factorize n =
     case p of
