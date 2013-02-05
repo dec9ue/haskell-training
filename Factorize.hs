@@ -16,8 +16,10 @@ main =
 sieve_seq n = do
     x <- [(1 + intsqrt n)..]
     r <- return $ x * x - n
-    if limited_factorizable r 100000
-    then [(x,r)]
+    prime_list <- return $ take 100000 prime_seq
+    res <- return $ limited_factorize_with_list r prime_list
+    if all (<=(last prime_list)) res
+    then [(x,r,res)]
     else []
 
 limited_factorizable n limit =  limited_factorizable_with_list n $ take limit prime_seq
