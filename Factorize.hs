@@ -5,7 +5,7 @@ import Control.Monad
 import Control.Parallel.Strategies
 import System.IO
 
-prime_limit = 100000
+prime_limit = 1000000
 
 display s = do
     putStrLn s
@@ -48,6 +48,7 @@ limited_factorize_with_list 1 prime_list = []
 limited_factorize_with_list n prime_list =
    limited_factorize_with_list_internal n prime_list prime_list []
 
+limited_factorize_with_list_internal 1 _ _ _ = []
 limited_factorize_with_list_internal n prime_list [] [] = [n]
 
 limited_factorize_with_list_internal n prime_list [] res_list =
@@ -68,6 +69,7 @@ factorize n =
 
 -- intsqrt n = head [y | y <- [1..n] , (y+1)*(y+1) > n, y *y<=n]
 intsqrt n = binsearch (ordintsqrt n) 1 n
+intproot p n = binsearch (ordintproot p n) 1 n
 
 fact n = filter $ \m' -> n `mod` m' == 0
 
@@ -78,7 +80,13 @@ ordintsqrt n r =
     (False,False) -> GT
     (False,True ) -> EQ
     (_    ,    _) -> undefined
-  
+
+ordintproot p n r =
+    case (((r+1)^p) <= n,(r^p) <= n) of
+    (True ,True)  -> LT
+    (False,False) -> GT
+    (False,True ) -> EQ
+    (_    ,    _) -> undefined
 
 -- ismatch must be a monotonic function over the domain
 binsearch ismatch high low =
