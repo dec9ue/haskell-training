@@ -4,8 +4,11 @@ import System.IO.Unsafe
 import Control.Monad
 import Control.Parallel.Strategies
 import System.IO
+import System.Exit
+import System.Environment(getArgs)
+import Control.Applicative
 
-prime_limit = 1000000
+prime_limit = 10000000
 
 display s = do
     putStrLn s
@@ -13,24 +16,34 @@ display s = do
 
 main =
   do
+    args <- getArgs
+    let maybe_start = (fromInteger.read)<$>listToMaybe args
+    let maybe_count = (fromInteger.read)<$>((\_->listToMaybe.tail$args) =<< maybe_start)
+    display $ "vars " ++ show maybe_start ++ " "++ show maybe_count
     display $ "preparing primes..."
     display $ "last element is : " ++ (show $ last $ take prime_limit $ evaluate_parallel $ prime_seq)
     display $ "preparing primes...done."
-    forM_ (take 10 $ sieve_seq 888888888888888888884327) (\x -> display $ show x)
-    display "now start"
-    forM_ (sieve_seq  280671392065546467397265294532969672241810318954163887187279320454220348884327) (\x -> display $ show x)
+    forM_ (take 10 $ sieve_seq 888888888888888888884327 Nothing Nothing) (\x -> display $ show x)
+    display $ "now start..."
+    forM_ (sieve_seq 280671392065546467397265294532969672241810318954163887187279320454220348884327 maybe_start maybe_count) (\x -> display $ show x)
 
 -- evaluate_parallel = parMap rseq id
-evaluate_parallel = withStrategy $ parListNth 5 rdeepseq
+-- evaluate_parallel = withStrategy $ parListNth 5 rdeepseq
+evaluate_parallel = id
 
-sieve_seq n = do
-    x <- [(1 + intsqrt n)..]
-    r <- return $ x * x - n
-    prime_list <- return $ take prime_limit prime_seq
-    res <- return $ evaluate_parallel $ limited_factorize_with_list r prime_list
-    if all (<=(last prime_list)) res
-    then [(x,r,res)]
-    else []
+sieve_seq :: Integer -> Maybe Integer -> Maybe Integer -> [(Integer,Integer,[Integer])]
+sieve_seq n mstart count = 
+    let start = fromMaybe (1 + intsqrt n) mstart in
+    let pre_prime_list = take prime_limit prime_seq in
+    let prime_list = pre_prime_list in
+    let domain_list = maybe [start..] (\x ->[start..(start+x)]) count in
+    do
+        x <- domain_list
+        let r = x * x - n
+        let res = evaluate_parallel $ limited_factorize_with_list r prime_list
+        if all (<=(last prime_list)) res
+        then [(x,r,res)]
+        else []
 
 limited_factorizable n limit =  limited_factorizable_with_list n $ take limit prime_seq
 
@@ -39,12 +52,7 @@ limited_factorizable_with_list n prime_list = all (<= (last prime_list)) $ limit
 limited_factorize n limit = limited_factorize_with_list n $ take limit prime_seq
 
 limited_factorize_with_list 1 prime_list = []
--- limited_factorize_with_list n prime_list =
---    let fact_list  = fact n prime_list in
---    let rest_val   = n `div` product fact_list in
---    if rest_val == n
---    then fact_list ++ [n]
---    else fact_list ++ (limited_factorize_with_list rest_val fact_list)
+
 limited_factorize_with_list n prime_list =
    limited_factorize_with_list_internal n prime_list prime_list []
 
@@ -56,8 +64,11 @@ limited_factorize_with_list_internal n prime_list [] res_list =
 
 limited_factorize_with_list_internal n prime_list (cur_head:cur_tail) res_list =
    if n `mod` cur_head == 0
-   then cur_head:(limited_factorize_with_list_internal (n `div` cur_head) prime_list cur_tail (cur_head:res_list))
-   else limited_factorize_with_list_internal n prime_list cur_tail res_list
+   then let next_n = n `div` cur_head in
+        cur_head:(limited_factorize_with_list_internal next_n prime_list cur_tail (cur_head:res_list))
+   else if cur_head * cur_head > n
+        then limited_factorize_with_list_internal n res_list res_list []
+        else limited_factorize_with_list_internal n prime_list cur_tail res_list
 
 factorize n =
     case p of
