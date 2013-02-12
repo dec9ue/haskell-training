@@ -1,7 +1,10 @@
+import Data.List
+import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
 import System.IO
 import Control.Monad
+import Control.Applicative
 
 factors = [162425297,
            215940091,
@@ -26,14 +29,22 @@ cons1 h (x,y,z) = (h:x,y,z)
 cons2 h (x,y,z) = (x,h:y,z)
 cons3 h (x,y,z) = (x,y,h:z)
 
-surface_area (x,y,z) = a*b + b*c + c*a
-    where (a,b,c) = (product x,product y,product z)
+surface_area v = a*b + b*c + c*a
+    where (a,b,c) = surface v
+
+surface  (x,y,z) = (product x,product y,product z)
 
 main = do
     let m = Map.fromList $ map (\v->(surface_area v,v))$ triple_power factors
-    let min_key = minimum $ Map.keys $ m
+    let min_key  = (sort $ Map.keys $ m) !! 0
     display $ "result : " ++ show (min_key)
-    display $ "result : " ++ show (Map.lookup min_key m)
+    display $ "result : " ++ show (surface <$> Map.lookup min_key m)
+    let min_key2 = (sort $ Map.keys $ m) !! 1
+    display $ "result : " ++ show (min_key2)
+    display $ "result : " ++ show (surface <$> Map.lookup min_key2 m)
+    let (a,b,c) = fromMaybe (0,0,0) $ (surface <$> Map.lookup min_key2 m)
+    let [x,y,z] = sort $ [a,b,c]
+    display $ "final result is : " ++ show x ++ "x" ++ show y ++ "x" ++ show z
 
 
 intsqrt n = binsearch (ordintsqrt n) 1 n
